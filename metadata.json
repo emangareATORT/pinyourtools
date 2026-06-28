@@ -1,0 +1,6 @@
+{
+  "name": "Pin Your Tools",
+  "description": "Página de inicio para navegador web con sincronización de Google, administración de enlaces y diseño adaptativo oscuro.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

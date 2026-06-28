@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "LinkItem": {
+      "title": "LinkItem",
+      "description": "A saved navigation link created by a user",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "userId": { "type": "string" },
+        "order": { "type": "integer" },
+        "color": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["title", "url", "userId", "order"]
+    }
+  },
+  "firestore": {
+    "links/{linkId}": {
+      "schema": "LinkItem",
+      "description": "Collection of saved links for user dashboards"
+    }
+  }
+}
