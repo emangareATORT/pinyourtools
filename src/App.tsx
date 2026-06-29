@@ -394,7 +394,7 @@ export default function App() {
       case 'newspaper':
         return "min-h-screen w-screen bg-[#faf9f6] text-zinc-900 font-serif selection:bg-zinc-250 selection:text-zinc-900 flex flex-col relative overflow-hidden";
       case 'colorful':
-        return "min-h-screen w-screen bg-[#09080e] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#13111f] via-[#09080e] to-[#050507] text-purple-200/90 font-sans selection:bg-indigo-950 selection:text-white flex flex-col relative overflow-hidden";
+        return "min-h-screen w-screen bg-[#f8fafc] text-slate-850 font-sans selection:bg-rose-100 selection:text-slate-900 flex flex-col relative overflow-hidden";
       case 'dark':
       default:
         return "min-h-screen w-screen bg-[#080808] bg-radial-[circle_at_center,_var(--tw-gradient-stops)] from-zinc-950 via-[#060606] to-black text-zinc-100 font-sans selection:bg-zinc-800 selection:text-white flex flex-col relative overflow-hidden";
@@ -408,7 +408,7 @@ export default function App() {
       case 'newspaper':
         return 'border-zinc-300 bg-white/50 text-zinc-500 font-sans border-t-2 border-zinc-900';
       case 'colorful':
-        return 'border-indigo-950/40 bg-[#09080e]/50 text-indigo-400/70';
+        return 'border-slate-200 bg-white/50 text-slate-500 font-sans';
       case 'dark':
       default:
         return 'border-white/5 bg-black/20 text-zinc-500';
@@ -428,8 +428,12 @@ export default function App() {
       case 'colorful':
         return (
           <>
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(139,92,246,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(139,92,246,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
-            <div className="absolute top-0 left-1/3 right-1/3 h-64 bg-indigo-500/5 blur-[100px] pointer-events-none rounded-full" />
+            {/* Soft, bright, luminous color spots of Red, Blue, Green, Yellow */}
+            <div className="absolute top-[-25%] left-[-15%] w-[60%] h-[60%] rounded-full bg-rose-400/15 blur-[120px] pointer-events-none z-0" />
+            <div className="absolute top-[-25%] right-[-15%] w-[60%] h-[60%] rounded-full bg-blue-400/15 blur-[120px] pointer-events-none z-0" />
+            <div className="absolute bottom-[-15%] left-[5%] w-[50%] h-[50%] rounded-full bg-emerald-400/15 blur-[120px] pointer-events-none z-0" />
+            <div className="absolute bottom-[-15%] right-[5%] w-[50%] h-[50%] rounded-full bg-amber-400/15 blur-[120px] pointer-events-none z-0" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(15,23,42,0.012)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.012)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_80%,transparent_100%)] pointer-events-none z-0" />
           </>
         );
       case 'dark':
@@ -491,7 +495,7 @@ export default function App() {
 
           {/* Footer with credit and version */}
           <footer className={`w-full py-2.5 text-center shrink-0 border-t ${getFooterClasses()} text-[10px] font-mono tracking-wider z-20`}>
-            By @emagnare Version 1.7
+            By @emagnare Version 1.8
           </footer>
 
           {/* Control Settings Sidebar */}

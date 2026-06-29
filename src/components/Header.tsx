@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'newspaper':
         return 'bg-[#faf9f6] border-b border-zinc-300 text-zinc-900 font-serif';
       case 'colorful':
-        return 'bg-[#09080e]/95 border-b border-indigo-950/60 text-purple-200/90';
+        return 'bg-white/70 border-b border-slate-200 text-slate-800 backdrop-blur-md';
       case 'dark':
       default:
         return 'bg-[#080808]/90 border-b border-white/5 text-zinc-100';
@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'newspaper':
         return 'bg-white border border-zinc-300';
       case 'colorful':
-        return 'bg-indigo-950/20 border border-indigo-900/30';
+        return 'bg-slate-100 border border-slate-200/80';
       case 'dark':
       default:
         return 'bg-white/5 border border-white/10';
@@ -78,12 +78,40 @@ export const Header: React.FC<HeaderProps> = ({
         : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 border border-transparent';
     } else if (theme === 'colorful') {
       return isActive
-        ? 'bg-indigo-600/20 text-purple-200 shadow-sm border border-indigo-500/30'
-        : 'text-indigo-400/80 hover:text-purple-200 hover:bg-indigo-500/5 border border-transparent';
+        ? 'bg-white text-slate-800 shadow-sm border border-slate-200/60 font-medium'
+        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/40 border border-transparent';
     } else {
       return isActive
         ? 'bg-white/10 text-white shadow-sm border border-white/10'
         : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border border-transparent';
+    }
+  };
+
+  const getOrganizeButtonClasses = () => {
+    if (isEditMode) {
+      switch (theme) {
+        case 'sepia':
+          return 'bg-amber-100 border border-amber-500/50 text-amber-800 font-bold shadow-inner';
+        case 'newspaper':
+          return 'bg-zinc-900 border-zinc-900 text-white font-bold underline decoration-2 underline-offset-2';
+        case 'colorful':
+          return 'bg-amber-100 border border-amber-300 text-amber-800 font-bold shadow-inner';
+        case 'dark':
+        default:
+          return 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-bold';
+      }
+    } else {
+      switch (theme) {
+        case 'sepia':
+          return 'bg-[#ebdcb9] border border-[#dfd0b0] text-[#433422] hover:bg-[#dfd0b0] font-semibold';
+        case 'newspaper':
+          return 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100';
+        case 'colorful':
+          return 'bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-200/60 font-semibold';
+        case 'dark':
+        default:
+          return 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-zinc-100 hover:border-zinc-700 hover:bg-zinc-850 font-semibold';
+      }
     }
   };
 
@@ -94,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'newspaper':
         return 'bg-zinc-900 text-white hover:bg-zinc-800';
       case 'colorful':
-        return 'bg-indigo-600 text-white hover:bg-indigo-500';
+        return 'bg-slate-900 text-white hover:bg-slate-800';
       case 'dark':
       default:
         return 'bg-white text-black hover:bg-zinc-200';
@@ -116,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({
               : theme === 'newspaper'
               ? 'bg-zinc-900 text-white border border-zinc-900'
               : theme === 'colorful'
-              ? 'bg-gradient-to-br from-slate-900 to-indigo-950 border border-indigo-900/40 text-indigo-400'
+              ? 'bg-gradient-to-br from-rose-400 to-amber-300 border border-amber-200 text-white shadow-sm'
               : 'bg-gradient-to-br from-zinc-800 to-zinc-950 border border-white/10 text-emerald-400'
           }`}>
             <Pin className={`w-4 h-4 rotate-[30deg] transform group-hover:rotate-[45deg] group-hover:scale-110 transition-all duration-300 ${
@@ -125,12 +153,12 @@ export const Header: React.FC<HeaderProps> = ({
                 : theme === 'newspaper'
                 ? 'text-white'
                 : theme === 'colorful'
-                ? 'text-indigo-400'
+                ? 'text-white'
                 : 'text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.3)]'
             }`} />
           </div>
           <span className={`text-xs font-semibold tracking-[0.3em] uppercase group-hover:opacity-100 transition-all ${
-            theme === 'newspaper' ? 'font-serif font-bold tracking-[0.2em] text-zinc-900' : theme === 'colorful' ? 'font-sans text-indigo-250' : 'font-light text-current'
+            theme === 'newspaper' ? 'font-serif font-bold tracking-[0.2em] text-zinc-900' : theme === 'colorful' ? 'font-sans text-slate-700' : 'font-light text-current'
           }`}>
             PIN YOUR TOOLS
           </span>
@@ -139,25 +167,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right section: Theme Selector, Views, Actions, Add Link button */}
       <div className="flex flex-wrap items-center justify-end gap-3.5 font-sans">
-        
-        {/* ADD LINK BUTTON - High Visibility UX CTA */}
-        <button
-          onClick={onOpenAdmin}
-          className={`px-3.5 py-1.5 rounded-md text-[10px] uppercase font-bold tracking-widest transition-all duration-200 flex items-center gap-1.5 shadow-sm border font-sans ${
-            theme === 'sepia'
-              ? 'bg-[#433422] border-[#433422] text-[#fbf6eb] hover:bg-[#5c4a37] hover:border-[#5c4a37]'
-              : theme === 'newspaper'
-              ? 'bg-zinc-900 border-zinc-900 text-white hover:bg-zinc-800'
-              : theme === 'colorful'
-              ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500'
-              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 hover:border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
-          }`}
-          title="Añadir un nuevo enlace favorito"
-          id="header-add-link-btn"
-        >
-          <PlusCircle className="w-3.5 h-3.5" />
-          <span>Añadir Enlace</span>
-        </button>
 
         {/* Theme Switcher Bar - 4 distinct themes */}
         <div className={`flex items-center p-0.5 rounded-md ${getControlBgClasses()}`} id="theme-selector-bar">
@@ -277,19 +286,31 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             <button
               onClick={onToggleEditMode}
-              className={`px-3 py-1.5 rounded-md border text-[10px] uppercase tracking-wider transition-all duration-200 font-sans ${
-                isEditMode
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-bold'
-                  : theme === 'newspaper'
-                  ? 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100'
-                  : 'bg-white/5 border border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'
-              }`}
+              className={`px-3 py-1.5 rounded-md border text-[10px] uppercase tracking-wider transition-all duration-200 font-sans ${getOrganizeButtonClasses()}`}
               id="toggle-edit-mode-btn"
             >
               {isEditMode ? 'Listo' : 'Organizar'}
             </button>
           </div>
         )}
+
+        {/* ADD LINK BUTTON - Styled identically to the other action buttons */}
+        <button
+          onClick={onOpenAdmin}
+          className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center font-sans ${
+            theme === 'sepia'
+              ? 'bg-[#ebdcb9] border border-[#dfd0b0] text-[#433422] hover:bg-[#dfd0b0]'
+              : theme === 'newspaper'
+              ? 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100'
+              : theme === 'colorful'
+              ? 'bg-white/70 border border-slate-200 text-slate-700 hover:bg-slate-100/90 hover:text-slate-900'
+              : 'bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/[0.08]'
+          }`}
+          title="Añadir un nuevo enlace favorito"
+          id="header-add-link-btn"
+        >
+          + Enlace
+        </button>
 
         {/* Export HTML Button */}
         {totalLinks > 0 && onExportHtml && (

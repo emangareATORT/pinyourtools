@@ -89,6 +89,77 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
     height: isGridScrollable ? 'auto' : `${gridHeight}px`,
   };
 
+  // Helper to map dark pastel classes to bright, vibrant, luminous classes in colorful theme
+  const mapColorfulPreset = (c: string) => {
+    if (!c) return '';
+    return c
+      .replace(/bg-rose-400\/\[0\.04\]/g, 'bg-rose-50/90')
+      .replace(/border-rose-300\/15/g, 'border-rose-200/80')
+      .replace(/text-rose-200/g, 'text-rose-700')
+      .replace(/hover:text-rose-100/g, 'hover:text-rose-800')
+      .replace(/hover:bg-rose-400\/\[0\.09\]/g, 'hover:bg-rose-100/70')
+
+      .replace(/bg-emerald-400\/\[0\.04\]/g, 'bg-emerald-50/90')
+      .replace(/border-emerald-300\/15/g, 'border-emerald-200/80')
+      .replace(/text-emerald-200/g, 'text-emerald-700')
+      .replace(/hover:text-emerald-100/g, 'hover:text-emerald-800')
+      .replace(/hover:bg-emerald-400\/\[0\.09\]/g, 'hover:bg-emerald-100/70')
+
+      .replace(/bg-sky-400\/\[0\.04\]/g, 'bg-sky-50/90')
+      .replace(/border-sky-300\/15/g, 'border-sky-200/80')
+      .replace(/text-sky-200/g, 'text-sky-700')
+      .replace(/hover:text-sky-100/g, 'hover:text-sky-800')
+      .replace(/hover:bg-sky-400\/\[0\.09\]/g, 'hover:bg-sky-100/70')
+
+      .replace(/bg-amber-400\/\[0\.03\]/g, 'bg-amber-50/90')
+      .replace(/border-amber-300\/15/g, 'border-amber-200/80')
+      .replace(/text-amber-200/g, 'text-amber-700')
+      .replace(/hover:text-amber-100/g, 'hover:text-amber-800')
+      .replace(/hover:bg-amber-400\/\[0\.08\]/g, 'hover:bg-amber-100/70')
+
+      .replace(/bg-orange-400\/\[0\.04\]/g, 'bg-orange-50/90')
+      .replace(/border-orange-300\/15/g, 'border-orange-200/80')
+      .replace(/text-orange-200/g, 'text-orange-700')
+      .replace(/hover:text-orange-100/g, 'hover:text-orange-800')
+      .replace(/hover:bg-orange-400\/\[0\.09\]/g, 'hover:bg-orange-100/70')
+
+      .replace(/bg-purple-400\/\[0\.04\]/g, 'bg-purple-50/90')
+      .replace(/border-purple-300\/15/g, 'border-purple-200/80')
+      .replace(/text-purple-200/g, 'text-purple-700')
+      .replace(/hover:text-purple-100/g, 'hover:text-purple-800')
+      .replace(/hover:bg-purple-400\/\[0\.09\]/g, 'hover:bg-purple-100/70')
+
+      .replace(/bg-cyan-400\/\[0\.04\]/g, 'bg-cyan-50/90')
+      .replace(/border-cyan-300\/15/g, 'border-cyan-200/80')
+      .replace(/text-cyan-200/g, 'text-cyan-700')
+      .replace(/hover:text-cyan-100/g, 'hover:text-cyan-800')
+      .replace(/hover:bg-cyan-400\/\[0\.09\]/g, 'hover:bg-cyan-100/70')
+
+      .replace(/bg-teal-400\/\[0\.04\]/g, 'bg-teal-50/90')
+      .replace(/border-teal-300\/15/g, 'border-teal-200/80')
+      .replace(/text-teal-200/g, 'text-teal-700')
+      .replace(/hover:text-teal-100/g, 'hover:text-teal-800')
+      .replace(/hover:bg-teal-400\/\[0\.09\]/g, 'hover:bg-teal-100/70')
+
+      .replace(/bg-fuchsia-400\/\[0\.04\]/g, 'bg-fuchsia-50/90')
+      .replace(/border-fuchsia-300\/15/g, 'border-fuchsia-200/80')
+      .replace(/text-fuchsia-200/g, 'text-fuchsia-700')
+      .replace(/hover:text-fuchsia-100/g, 'hover:text-fuchsia-800')
+      .replace(/hover:bg-fuchsia-400\/\[0\.09\]/g, 'hover:bg-fuchsia-100/70')
+
+      .replace(/bg-indigo-400\/\[0\.04\]/g, 'bg-indigo-50/90')
+      .replace(/border-indigo-300\/15/g, 'border-indigo-200/80')
+      .replace(/text-indigo-200/g, 'text-indigo-700')
+      .replace(/hover:text-indigo-100/g, 'hover:text-indigo-800')
+      .replace(/hover:bg-indigo-400\/\[0\.09\]/g, 'hover:bg-indigo-100/70')
+
+      .replace(/bg-zinc-900\/40/g, 'bg-slate-50/90')
+      .replace(/border-zinc-800\/50/g, 'border-slate-200')
+      .replace(/text-zinc-350/g, 'text-slate-600')
+      .replace(/hover:text-zinc-100/g, 'hover:text-slate-800')
+      .replace(/hover:bg-zinc-800\/50/g, 'hover:bg-slate-100/80');
+  };
+
   // Helper to resolve card classes based on Theme & Sober mode
   const getCardClasses = (presetColor?: string) => {
     if (isSoberMode) {
@@ -98,7 +169,7 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
         case 'newspaper':
           return 'bg-white border border-zinc-300 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50';
         case 'colorful':
-          return 'bg-indigo-950/15 border border-indigo-500/10 text-indigo-300 hover:text-indigo-100 hover:bg-indigo-950/25';
+          return 'bg-slate-50/70 border border-slate-200 text-slate-600 hover:text-slate-850 hover:bg-slate-100/80';
         case 'dark':
         default:
           return 'bg-white/[0.015] border-white/5 text-zinc-400 hover:text-zinc-300';
@@ -114,8 +185,8 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
         return 'bg-white border border-zinc-900 text-zinc-900 hover:bg-zinc-50 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5';
       case 'colorful':
         return presetColor
-          ? `${presetColor} hover:border-indigo-400/40`
-          : 'bg-indigo-950/25 hover:bg-indigo-950/40 border border-indigo-500/25 text-purple-100 hover:border-indigo-400/50';
+          ? `${mapColorfulPreset(presetColor)} shadow-sm hover:border-slate-350 hover:shadow-md transition-all duration-200`
+          : 'bg-slate-50/80 hover:bg-slate-100/90 border border-slate-200 text-slate-800 hover:border-slate-350 shadow-sm hover:shadow-md transition-all duration-200';
       case 'dark':
       default:
         return presetColor || 'bg-zinc-900/60 hover:bg-zinc-900/80 border border-zinc-800 text-zinc-100 hover:border-zinc-700 hover:shadow-zinc-950/40';
@@ -129,7 +200,7 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
       case 'newspaper':
         return 'bg-zinc-100 border border-zinc-300 text-zinc-900 font-serif font-bold';
       case 'colorful':
-        return 'bg-indigo-950/40 border border-indigo-500/15 text-indigo-200';
+        return 'bg-slate-100 border border-slate-200 text-slate-700';
       case 'dark':
       default:
         return 'bg-white/[0.02] border border-white/5 text-white/90';
@@ -143,7 +214,7 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
       case 'newspaper':
         return 'bg-white border border-zinc-900';
       case 'colorful':
-        return 'bg-[#09080e] border border-indigo-500/25';
+        return 'bg-white border border-slate-200';
       case 'dark':
       default:
         return 'bg-[#080808] border border-white/10';
