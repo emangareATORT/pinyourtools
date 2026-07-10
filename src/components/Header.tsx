@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, LogIn, LogOut, RotateCcw, LayoutGrid, List, Folder, Command, Feather, Palette, Download, Moon, Coffee, Sparkles, Newspaper, PlusCircle, Pin } from 'lucide-react';
+import { Settings, LogIn, LogOut, RotateCcw, LayoutGrid, List, Folder, FolderOpen, Command, Feather, Palette, Download, Moon, Coffee, Sparkles, Newspaper, PlusCircle, Pin, Contrast } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { ThemeType } from '../types';
 
@@ -12,13 +12,15 @@ interface HeaderProps {
   onToggleEditMode: () => void;
   totalLinks: number;
   onResetStyles?: () => void;
-  viewMode: 'grid' | 'list' | 'groups' | 'dock';
-  onChangeViewMode: (mode: 'grid' | 'list' | 'groups' | 'dock') => void;
+  viewMode: 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups';
+  onChangeViewMode: (mode: 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups') => void;
   isSoberMode: boolean;
   onToggleSoberMode: () => void;
   onExportHtml?: () => void;
   theme: ThemeType;
   onChangeTheme: (theme: ThemeType) => void;
+  bgBrightness: number;
+  onChangeBgBrightness: (level: number) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -37,95 +39,145 @@ export const Header: React.FC<HeaderProps> = ({
   onExportHtml,
   theme,
   onChangeTheme,
+  bgBrightness,
+  onChangeBgBrightness,
 }) => {
   // Theme-specific CSS classes for high-quality integration
   const getHeaderThemeClasses = () => {
+    const isDark = bgBrightness >= 6;
     switch (theme) {
       case 'sepia':
-        return 'bg-[#f4ebd0]/90 border-b border-[#dfd0b0] text-[#433422]';
+        return isDark
+          ? 'bg-[#433422]/90 border-b border-[#5c4a37] text-[#fcf9f1] backdrop-blur-md'
+          : 'bg-[#f4ebd0]/90 border-b border-[#dfd0b0] text-[#433422]';
       case 'newspaper':
-        return 'bg-[#faf9f6] border-b border-zinc-300 text-zinc-900 font-serif';
+        return isDark
+          ? 'bg-zinc-950/90 border-b border-zinc-850 text-zinc-100 font-serif'
+          : 'bg-[#faf9f6] border-b border-zinc-300 text-zinc-900 font-serif';
       case 'colorful':
-        return 'bg-white/70 border-b border-slate-200 text-slate-800 backdrop-blur-md';
+        return isDark
+          ? 'bg-[#0f172a]/90 border-b border-indigo-950 text-purple-100 backdrop-blur-md'
+          : 'bg-white/70 border-b border-slate-200 text-slate-800 backdrop-blur-md';
       case 'dark':
       default:
-        return 'bg-[#080808]/90 border-b border-white/5 text-zinc-100';
+        return isDark
+          ? 'bg-[#080808]/90 border-b border-white/5 text-zinc-100'
+          : 'bg-white/90 border-b border-zinc-200 text-zinc-900 backdrop-blur-md';
     }
   };
 
   const getControlBgClasses = () => {
+    const isDark = bgBrightness >= 6;
     switch (theme) {
       case 'sepia':
-        return 'bg-[#ebdcb9]/70 border border-[#dfd0b0]/80';
+        return isDark
+          ? 'bg-black/20 border border-[#5c4a37]/50'
+          : 'bg-[#ebdcb9]/70 border border-[#dfd0b0]/80';
       case 'newspaper':
-        return 'bg-white border border-zinc-300';
+        return isDark
+          ? 'bg-zinc-900/60 border border-zinc-800'
+          : 'bg-white border border-zinc-300';
       case 'colorful':
-        return 'bg-slate-100 border border-slate-200/80';
+        return isDark
+          ? 'bg-slate-900/60 border border-slate-850'
+          : 'bg-slate-100 border border-slate-200/80';
       case 'dark':
       default:
-        return 'bg-white/5 border border-white/10';
+        return isDark
+          ? 'bg-white/5 border border-white/10'
+          : 'bg-black/5 border border-black/10';
     }
   };
 
   const getButtonActiveClasses = (isActive: boolean) => {
+    const isDark = bgBrightness >= 6;
     if (theme === 'sepia') {
+      if (isDark) {
+        return isActive
+          ? 'bg-[#5c4a37] text-white shadow-sm font-medium border border-[#5c4a37]'
+          : 'text-[#fcf9f1]/60 hover:text-white hover:bg-[#5c4a37]/30 border border-transparent';
+      }
       return isActive
         ? 'bg-[#dfd0b0] text-[#433422] shadow-sm font-medium border border-[#dfd0b0]/50'
         : 'text-[#705d46] hover:text-[#433422] hover:bg-[#dfd0b0]/30 border border-transparent';
     } else if (theme === 'newspaper') {
+      if (isDark) {
+        return isActive
+          ? 'bg-zinc-100 text-zinc-950 font-bold shadow-sm border border-zinc-100'
+          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 border border-transparent';
+      }
       return isActive
         ? 'bg-zinc-900 text-white font-bold shadow-sm border border-zinc-900'
         : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 border border-transparent';
     } else if (theme === 'colorful') {
+      if (isDark) {
+        return isActive
+          ? 'bg-indigo-600/35 text-purple-100 border border-indigo-500/35 shadow-sm'
+          : 'text-indigo-400 hover:text-purple-200 hover:bg-indigo-500/10 border border-transparent';
+      }
       return isActive
         ? 'bg-white text-slate-800 shadow-sm border border-slate-200/60 font-medium'
         : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/40 border border-transparent';
     } else {
+      if (isDark) {
+        return isActive
+          ? 'bg-white/10 text-white shadow-sm border border-white/10'
+          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border border-transparent';
+      }
       return isActive
-        ? 'bg-white/10 text-white shadow-sm border border-white/10'
-        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border border-transparent';
+        ? 'bg-black/10 text-black shadow-sm border border-black/10'
+        : 'text-zinc-500 hover:text-zinc-850 hover:bg-black/5 border border-transparent';
     }
   };
 
-  const getOrganizeButtonClasses = () => {
-    if (isEditMode) {
-      switch (theme) {
-        case 'sepia':
-          return 'bg-amber-100 border border-amber-500/50 text-amber-800 font-bold shadow-inner';
-        case 'newspaper':
-          return 'bg-zinc-900 border-zinc-900 text-white font-bold underline decoration-2 underline-offset-2';
-        case 'colorful':
-          return 'bg-amber-100 border border-amber-300 text-amber-800 font-bold shadow-inner';
-        case 'dark':
-        default:
-          return 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-bold';
-      }
-    } else {
-      switch (theme) {
-        case 'sepia':
-          return 'bg-[#ebdcb9] border border-[#dfd0b0] text-[#433422] hover:bg-[#dfd0b0] font-semibold';
-        case 'newspaper':
-          return 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100';
-        case 'colorful':
-          return 'bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-200/60 font-semibold';
-        case 'dark':
-        default:
-          return 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-zinc-100 hover:border-zinc-700 hover:bg-zinc-850 font-semibold';
-      }
-    }
-  };
+  const getTopButtonClasses = (isActive: boolean = false, isIconOnly: boolean = false, isRound: boolean = false) => {
+    const isDark = bgBrightness >= 6;
+    const padding = isIconOnly ? 'p-1.5' : 'px-3 py-1.5';
+    const rounded = isRound ? 'rounded-full' : 'rounded-md';
+    const base = `${padding} ${rounded} text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 font-sans border shadow-sm cursor-pointer select-none`;
 
-  const getLoginButtonClasses = () => {
     switch (theme) {
       case 'sepia':
-        return 'bg-[#433422] text-[#fbf6eb] hover:bg-[#5c4a37]';
+        if (isDark) {
+          return isActive
+            ? `${base} bg-[#5c4a37] border-[#5c4a37] text-white`
+            : `${base} bg-black/20 border-[#5c4a37]/50 text-[#fcf9f1]/70 hover:text-white hover:bg-[#5c4a37]/30`;
+        } else {
+          return isActive
+            ? `${base} bg-[#dfd0b0] border-[#dfd0b0]/50 text-[#433422]`
+            : `${base} bg-[#ebdcb9]/70 border-[#dfd0b0]/80 text-[#705d46] hover:text-[#433422] hover:bg-[#dfd0b0]/40`;
+        }
       case 'newspaper':
-        return 'bg-zinc-900 text-white hover:bg-zinc-800';
+        if (isDark) {
+          return isActive
+            ? `${base} bg-zinc-100 border-zinc-100 text-zinc-950 font-bold`
+            : `${base} bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850`;
+        } else {
+          return isActive
+            ? `${base} bg-zinc-900 border-zinc-900 text-white font-bold`
+            : `${base} bg-white border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100`;
+        }
       case 'colorful':
-        return 'bg-slate-900 text-white hover:bg-slate-800';
+        if (isDark) {
+          return isActive
+            ? `${base} bg-indigo-600/35 border-indigo-500/35 text-purple-100`
+            : `${base} bg-slate-900/60 border-slate-850 text-indigo-400 hover:text-purple-200 hover:bg-indigo-500/10`;
+        } else {
+          return isActive
+            ? `${base} bg-white border-slate-200/60 text-slate-800 font-medium`
+            : `${base} bg-slate-100 border-slate-200/80 text-slate-500 hover:text-slate-800 hover:bg-slate-200/40`;
+        }
       case 'dark':
       default:
-        return 'bg-white text-black hover:bg-zinc-200';
+        if (isDark) {
+          return isActive
+            ? `${base} bg-white/10 border-white/10 text-white`
+            : `${base} bg-white/5 border-white/10 text-zinc-400 hover:text-white hover:bg-white/[0.08]`;
+        } else {
+          return isActive
+            ? `${base} bg-black/10 border-black/10 text-black`
+            : `${base} bg-black/5 border-black/10 text-zinc-500 hover:text-zinc-850 hover:bg-black/[0.08]`;
+        }
     }
   };
 
@@ -169,35 +221,61 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex flex-wrap items-center justify-end gap-3.5 font-sans">
 
         {/* Theme Switcher Bar - 4 distinct themes */}
-        <div className={`flex items-center p-0.5 rounded-md ${getControlBgClasses()}`} id="theme-selector-bar">
-          <button
-            onClick={() => onChangeTheme('dark')}
-            className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'dark')}`}
-            title="Tema Oscuro"
-          >
-            <Moon className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onChangeTheme('sepia')}
-            className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'sepia')}`}
-            title="Tema Sepia"
-          >
-            <Coffee className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onChangeTheme('colorful')}
-            className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'colorful')}`}
-            title="Tema Multicolor"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onChangeTheme('newspaper')}
-            className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'newspaper')}`}
-            title="Tema Periódico"
-          >
-            <Newspaper className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex items-center gap-2">
+          <div className={`flex items-center p-0.5 rounded-md ${getControlBgClasses()}`} id="theme-selector-bar">
+            <button
+              onClick={() => onChangeTheme('dark')}
+              className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'dark')}`}
+              title="Tema Oscuro"
+            >
+              <Moon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onChangeTheme('sepia')}
+              className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'sepia')}`}
+              title="Tema Sepia"
+            >
+              <Coffee className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onChangeTheme('colorful')}
+              className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'colorful')}`}
+              title="Tema Multicolor"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onChangeTheme('newspaper')}
+              className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(theme === 'newspaper')}`}
+              title="Tema Periódico"
+            >
+              <Newspaper className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Background Brightness Control (1-10) */}
+          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md ${getControlBgClasses()}`} id="bg-brightness-control">
+            <Contrast className="w-3.5 h-3.5 opacity-65 shrink-0" />
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={bgBrightness}
+              onChange={(e) => onChangeBgBrightness(parseInt(e.target.value, 10))}
+              className={`w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer ${
+                theme === 'sepia'
+                  ? 'bg-[#dfd0b0] accent-[#433422]'
+                  : theme === 'newspaper'
+                  ? 'bg-zinc-300 accent-zinc-900'
+                  : theme === 'colorful'
+                  ? 'bg-slate-200 accent-slate-800'
+                  : 'bg-zinc-880 accent-white'
+              }`}
+              title="Ajustar tono de fondo (1 = Blanco, 10 = Negro)"
+              id="bg-brightness-range"
+            />
+            <span className="text-[10px] font-mono font-bold min-w-[12px] text-center">{bgBrightness}</span>
+          </div>
         </div>
 
         {/* Layout Switcher */}
@@ -228,6 +306,14 @@ export const Header: React.FC<HeaderProps> = ({
               <Folder className="w-3.5 h-3.5" />
             </button>
             <button
+              onClick={() => onChangeViewMode('compact-groups')}
+              className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(viewMode === 'compact-groups')}`}
+              title="Vista por Categorías Compacta"
+              id="view-compact-groups-btn"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+            </button>
+            <button
               onClick={() => onChangeViewMode('dock')}
               className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(viewMode === 'dock')}`}
               title="Vista Muelle / Atajos Teclado (Dock)"
@@ -240,28 +326,15 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Visual Appearance Controls Bar (Sober Mode) */}
         {totalLinks > 0 && (
-          <div className={`flex items-center p-0.5 rounded-md ${getControlBgClasses()}`} id="style-appearance-controls">
-            {/* Toggle Sobrio */}
-            <button
-              onClick={onToggleSoberMode}
-              className={`px-2.5 py-1.5 rounded text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 font-sans ${
-                isSoberMode
-                  ? theme === 'sepia'
-                    ? 'bg-[#433422] text-[#fbf6eb] font-semibold border border-[#dfd0b0]/40'
-                    : theme === 'newspaper'
-                    ? 'bg-zinc-900 text-white font-bold border border-zinc-900'
-                    : theme === 'colorful'
-                    ? 'bg-indigo-600/20 text-purple-200 border border-indigo-500/35 font-semibold'
-                    : 'bg-zinc-850 text-white border border-zinc-700/60 font-semibold'
-                  : 'text-zinc-500 hover:text-current border border-transparent'
-              }`}
-              title="Modo Sobrio"
-              id="toggle-sober-mode-btn"
-            >
-              <Feather className="w-3.5 h-3.5" />
-              <span>Sobrio: {isSoberMode ? 'ON' : 'OFF'}</span>
-            </button>
-          </div>
+          <button
+            onClick={onToggleSoberMode}
+            className={getTopButtonClasses(isSoberMode)}
+            title="Modo Sobrio"
+            id="toggle-sober-mode-btn"
+          >
+            <Feather className="w-3.5 h-3.5" />
+            <span>Sobrio: {isSoberMode ? 'ON' : 'OFF'}</span>
+          </button>
         )}
 
         {/* Organize Mode Switcher */}
@@ -270,23 +343,17 @@ export const Header: React.FC<HeaderProps> = ({
             {isEditMode && onResetStyles && (
               <button
                 onClick={onResetStyles}
-                className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 font-sans ${
-                  theme === 'sepia'
-                    ? 'bg-[#ebdcb9] border border-[#dfd0b0] text-[#433422] hover:bg-[#dfd0b0]'
-                    : theme === 'newspaper'
-                    ? 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100'
-                    : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
-                }`}
+                className={getTopButtonClasses(false)}
                 id="reset-styles-btn"
                 title="Llevar el estilo de todos los cards a neutro"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 Reset styles
               </button>
             )}
             <button
               onClick={onToggleEditMode}
-              className={`px-3 py-1.5 rounded-md border text-[10px] uppercase tracking-wider transition-all duration-200 font-sans ${getOrganizeButtonClasses()}`}
+              className={getTopButtonClasses(isEditMode)}
               id="toggle-edit-mode-btn"
             >
               {isEditMode ? 'Listo' : 'Organizar'}
@@ -297,15 +364,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* ADD LINK BUTTON - Styled identically to the other action buttons */}
         <button
           onClick={onOpenAdmin}
-          className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center font-sans ${
-            theme === 'sepia'
-              ? 'bg-[#ebdcb9] border border-[#dfd0b0] text-[#433422] hover:bg-[#dfd0b0]'
-              : theme === 'newspaper'
-              ? 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100'
-              : theme === 'colorful'
-              ? 'bg-white/70 border border-slate-200 text-slate-700 hover:bg-slate-100/90 hover:text-slate-900'
-              : 'bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/[0.08]'
-          }`}
+          className={getTopButtonClasses(false)}
           title="Añadir un nuevo enlace favorito"
           id="header-add-link-btn"
         >
@@ -316,13 +375,7 @@ export const Header: React.FC<HeaderProps> = ({
         {totalLinks > 0 && onExportHtml && (
           <button
             onClick={onExportHtml}
-            className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 font-sans ${
-              theme === 'sepia'
-                ? 'bg-[#ebdcb9] border border-[#dfd0b0] text-[#433422] hover:bg-[#dfd0b0]'
-                : theme === 'newspaper'
-                ? 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100'
-                : 'bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/[0.08]'
-            }`}
+            className={getTopButtonClasses(false)}
             title="Exportar mi configuración como un archivo index.html"
             id="export-html-btn"
           >
@@ -334,13 +387,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Settings button */}
         <button
           onClick={onOpenAdmin}
-          className={`p-1.5 rounded-md transition-all duration-200 font-sans ${
-            theme === 'sepia'
-              ? 'bg-[#ebdcb9] border border-[#dfd0b0] text-[#433422] hover:bg-[#dfd0b0]'
-              : theme === 'newspaper'
-              ? 'bg-white border border-zinc-900 text-zinc-900 font-bold hover:bg-zinc-100'
-              : 'bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
-          }`}
+          className={getTopButtonClasses(false, true)}
           title="Administrar Sitios"
           id="open-admin-panel-btn"
         >
@@ -349,19 +396,18 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* User Card */}
         {user ? (
-          <div className={`flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-full cursor-pointer transition-colors font-sans ${
-            theme === 'sepia'
-              ? 'bg-[#ebdcb9] border border-[#dfd0b0] hover:bg-[#dfd0b0]'
-              : theme === 'newspaper'
-              ? 'bg-white border border-zinc-900 text-zinc-900 hover:bg-zinc-100'
-              : 'bg-white/5 border border-white/10 hover:bg-white/10'
-          }`} onClick={onOpenAdmin}>
+          <div 
+            className={getTopButtonClasses(false, false, true)} 
+            onClick={onOpenAdmin}
+          >
             {user.photoURL ? (
               <img
                 src={user.photoURL}
                 alt={user.displayName || 'Google User'}
                 className="w-5 h-5 rounded-full object-cover border border-white/10"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-white uppercase border border-white/10">
@@ -375,7 +421,7 @@ export const Header: React.FC<HeaderProps> = ({
         ) : (
           <button
             onClick={onLogin}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all duration-200 font-sans ${getLoginButtonClasses()}`}
+            className={getTopButtonClasses(true)}
             title="Iniciar sesión con Google"
             id="google-login-btn"
           >
@@ -387,3 +433,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

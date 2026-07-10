@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PlusCircle, Sparkles, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, Folder, Zap, Keyboard } from 'lucide-react';
+import { PlusCircle, Sparkles, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, Folder, FolderOpen, Zap, Keyboard } from 'lucide-react';
 import { LinkItem, ThemeType } from '../types';
 import { LinkCard } from './LinkCard';
 import { getOptimalGrid, getDomain } from '../utils/grid';
@@ -13,7 +13,7 @@ interface LinkGridProps {
   onDeleteLink: (id: string) => void;
   onMoveLink: (id: string, direction: 'up' | 'down' | 'left' | 'right', cols: number) => void;
   onOpenAdmin: () => void;
-  viewMode: 'grid' | 'list' | 'groups' | 'dock';
+  viewMode: 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups';
   isSoberMode: boolean;
   theme: ThemeType;
 }
@@ -312,6 +312,8 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
                             }}
                             className="w-3.5 h-3.5 object-contain rounded"
                             referrerPolicy="no-referrer"
+                            loading="lazy"
+                            decoding="async"
                           />
                         </div>
                       </div>
@@ -467,6 +469,8 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
                                 }}
                                 className="w-3 h-3 object-contain rounded"
                                 referrerPolicy="no-referrer"
+                                loading="lazy"
+                                decoding="async"
                               />
                             </div>
                           </div>
@@ -500,6 +504,134 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
                                 title="Eliminar"
                               >
                                 <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </a>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+    );
+  }
+
+  if (viewMode === 'compact-groups') {
+    const groups: { [key: string]: LinkItem[] } = {};
+    links.forEach((link) => {
+      const cat = link.category?.trim() ? link.category.trim() : 'General';
+      if (!groups[cat]) {
+        groups[cat] = [];
+      }
+      groups[cat].push(link);
+    });
+
+    return (
+      <div className="w-full h-full p-2 md:p-4 overflow-hidden flex flex-col items-center">
+        <div 
+          className="w-full max-w-6xl overflow-y-auto space-y-4 pr-1 select-none scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent animate-fade-in"
+          style={{ maxHeight: `${gridHeight}px` }}
+        >
+          <AnimatePresence mode="popLayout">
+            {Object.entries(groups).map(([catName, catLinks]) => (
+              <motion.div
+                key={catName}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="space-y-1.5"
+              >
+                {/* Group Header */}
+                <div className={`flex items-center gap-1.5 border-b pb-1 ${theme === 'newspaper' ? 'border-zinc-950 pb-1 font-serif' : theme === 'sepia' ? 'border-[#dfd0b0]' : 'border-white/[0.05]'}`}>
+                  <FolderOpen className="w-3 h-3 opacity-60" />
+                  <h3 className={`font-light text-[10px] uppercase tracking-wider ${theme === 'newspaper' ? 'font-serif font-bold text-zinc-900 text-xs' : theme === 'sepia' ? 'text-[#433422] font-semibold' : 'text-zinc-400'}`}>
+                    {catName}
+                  </h3>
+                  <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full border ${getIconWrapperClasses()}`}>
+                    {catLinks.length}
+                  </span>
+                </div>
+
+                {/* Grid of group items - compact columns and gaps */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                  {catLinks.map((link) => {
+                    const domain = getDomain(link.url);
+                    const monogram = link.title ? link.title.charAt(0).toUpperCase() : '?';
+                    const faviconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
+                    const secureUrl = link.url.match(/^[a-zA-Z]+:\/\//) ? link.url : `https://${link.url}`;
+                    const themeClass = getCardClasses(link.color);
+
+                    return (
+                      <motion.div
+                        key={link.id}
+                        layout
+                        className="relative group"
+                      >
+                        <a
+                          href={isEditMode ? undefined : secureUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            if (isEditMode) e.preventDefault();
+                          }}
+                          className={`flex items-center gap-2 p-1.5 rounded-md border backdrop-blur-md select-none transition-all duration-300 ${themeClass} ${
+                            isEditMode ? 'cursor-default ring-1 ring-amber-500/10' : `cursor-pointer ${isSoberMode ? '' : 'hover:scale-[1.01] hover:-translate-y-0.5'}`
+                          }`}
+                          id={`link-group-item-compact-${link.id}`}
+                        >
+                          {/* Compact monogram/icon */}
+                          <div className={`relative flex items-center justify-center w-6 h-6 rounded flex-shrink-0 border ${getIconWrapperClasses()}`}>
+                            <span className={`font-light text-[10px] ${theme === 'newspaper' ? 'font-serif font-bold' : 'text-current'}`}>
+                              {monogram}
+                            </span>
+                            <div className={`absolute -bottom-0.5 -right-0.5 p-0.5 rounded shadow flex items-center justify-center border ${getOverlayBgClasses()}`}>
+                              <img
+                                src={faviconUrl}
+                                alt={link.title}
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                                className="w-2.5 h-2.5 object-contain rounded"
+                                referrerPolicy="no-referrer"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="min-w-0 flex-1">
+                            <h4 className={`font-light text-[11px] leading-tight tracking-tight truncate ${theme === 'newspaper' ? 'font-serif font-bold text-zinc-900' : 'text-current'}`}>
+                              {link.title}
+                            </h4>
+                          </div>
+
+                          {isEditMode && (
+                            <div className="flex items-center gap-1 flex-shrink-0 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => onEditLink(link)}
+                                className={`p-0.5 rounded border transition-all ${
+                                  theme === 'newspaper' 
+                                    ? 'border-zinc-900 text-zinc-900 hover:bg-zinc-100' 
+                                    : 'bg-white/[0.02] border-white/5 text-amber-400'
+                                }`}
+                                title="Modificar"
+                              >
+                                <Edit2 className="w-2.5 h-2.5" />
+                              </button>
+                              <button
+                                onClick={() => onDeleteLink(link.id)}
+                                className={`p-0.5 rounded border transition-all ${
+                                  theme === 'newspaper' 
+                                    ? 'border-zinc-900 text-red-600 hover:bg-red-50' 
+                                    : 'bg-white/[0.02] border-white/5 text-red-400'
+                                }`}
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
                               </button>
                             </div>
                           )}
@@ -593,6 +725,8 @@ export const LinkGrid: React.FC<LinkGridProps> = ({
                           }}
                           className="w-3.5 h-3.5 object-contain rounded"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
+                          decoding="async"
                         />
                       </div>
                     </div>

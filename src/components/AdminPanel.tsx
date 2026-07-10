@@ -170,6 +170,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           alt="Usuario"
                           className="w-8 h-8 rounded-full border border-white/10 object-cover"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-semibold text-white uppercase border border-white/10">

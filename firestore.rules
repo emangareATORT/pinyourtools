@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     match /links/{linkId} {
       // Read is allowed if the user is authenticated and the document belongs to them
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
@@ -12,9 +17,17 @@ service cloud.firestore {
       allow update: if request.auth != null 
                     && resource.data.userId == request.auth.uid 
                     && request.resource.data.userId == request.auth.uid;
-                    
+                     
       // Delete is allowed if the user owns the document
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      // Users can only read, write, create, update, or delete their own settings document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

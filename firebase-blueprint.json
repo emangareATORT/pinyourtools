@@ -13,12 +13,29 @@
         "category": { "type": "string" }
       },
       "required": ["title", "url", "userId", "order"]
+    },
+    "UserSetting": {
+      "title": "UserSetting",
+      "description": "User preferences for theme, background brightness, layout view mode, and sober mode",
+      "type": "object",
+      "properties": {
+        "theme": { "type": "string" },
+        "bgBrightness": { "type": "integer" },
+        "viewMode": { "type": "string" },
+        "isSoberMode": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["theme", "bgBrightness", "viewMode", "isSoberMode"]
     }
   },
   "firestore": {
     "links/{linkId}": {
       "schema": "LinkItem",
       "description": "Collection of saved links for user dashboards"
+    },
+    "users/{userId}": {
+      "schema": "UserSetting",
+      "description": "User configuration document storing theme and layout preferences"
     }
   }
 }

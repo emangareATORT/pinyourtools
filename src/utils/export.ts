@@ -7,9 +7,10 @@ import { LinkItem } from '../types';
  */
 export function generateExportHtml(
   links: LinkItem[],
-  currentViewMode: 'grid' | 'list' | 'groups' | 'dock',
+  currentViewMode: 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups',
   isSoberMode: boolean,
-  currentTheme: string = 'dark'
+  currentTheme: string = 'dark',
+  defaultBgBrightness: number = 9
 ): string {
   const safeLinks = links || [];
   
@@ -170,6 +171,21 @@ export function generateExportHtml(
           </button>
         </div>
 
+        <!-- Background Brightness Selector (Working Live in static HTML!) -->
+        <div id="brightness-selectors-container" class="flex items-center rounded-md p-1 px-2.5 gap-2">
+          <i data-lucide="contrast" class="w-3.5 h-3.5 opacity-65 shrink-0"></i>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            id="brightness-range"
+            oninput="handleBrightnessChange(parseInt(this.value, 10))"
+            class="w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer"
+            title="Ajustar tono de fondo (1 = Blanco, 10 = Negro)"
+          />
+          <span id="brightness-value" class="text-[10px] font-mono font-bold min-w-[12px] text-center">9</span>
+        </div>
+
         <!-- Layout Modes -->
         <div id="layout-selectors-container" class="flex items-center rounded-md p-0.5">
           <button onclick="setViewMode('grid')" id="btn-mode-grid" class="p-1.5 rounded transition-all duration-150" title="Vista Cuadrícula">
@@ -180,6 +196,9 @@ export function generateExportHtml(
           </button>
           <button onclick="setViewMode('groups')" id="btn-mode-groups" class="p-1.5 rounded transition-all duration-150" title="Vista Grupos">
             <i data-lucide="folder" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="setViewMode('compact-groups')" id="btn-mode-compact-groups" class="p-1.5 rounded transition-all duration-150" title="Vista Grupos Compacta">
+            <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>
           </button>
           <button onclick="setViewMode('dock')" id="btn-mode-dock" class="p-1.5 rounded transition-all duration-150" title="Vista Dock / Teclado">
             <i data-lucide="command" class="w-3.5 h-3.5"></i>
@@ -226,7 +245,7 @@ export function generateExportHtml(
     <!-- Footer -->
     <footer id="app-footer" class="w-full py-3 text-center shrink-0 border-t">
       <p class="text-[10px] font-mono tracking-wider opacity-50">
-        By @emagnare Version 1.8
+        By @emagnare Version 2.0
       </p>
     </footer>
   </div>
@@ -262,6 +281,68 @@ export function generateExportHtml(
     let theme = '${safeTheme}';
     let searchQuery = '';
 
+    const THEME_BACKGROUNDS = {
+      sepia: {
+        1: '#ffffff',
+        2: '#fdfcf7',
+        3: '#fcf9f1',
+        4: '#fbf6eb', // original sepia
+        5: '#f4e9d5',
+        6: '#ead5b3',
+        7: '#d1b68a',
+        8: '#9e8055',
+        9: '#433422',
+        10: '#000000',
+      },
+      newspaper: {
+        1: '#ffffff',
+        2: '#fcfcfc',
+        3: '#faf9f6', // original newspaper
+        4: '#eaeae3',
+        5: '#dbdad2',
+        6: '#bcbbb3',
+        7: '#9c9b93',
+        8: '#5c5b55',
+        9: '#18181b',
+        10: '#000000',
+      },
+      colorful: {
+        1: '#ffffff',
+        2: '#f8fafc', // original colorful
+        3: '#f1f5f9',
+        4: '#cbd5e1',
+        5: '#94a3b8',
+        6: '#64748b',
+        7: '#475569',
+        8: '#1e293b',
+        9: '#0f172a',
+        10: '#000000',
+      },
+      dark: {
+        1: '#ffffff',
+        2: '#f4f4f5',
+        3: '#d4d4d8',
+        4: '#a1a1aa',
+        5: '#71717a',
+        6: '#3f3f46',
+        7: '#27272a',
+        8: '#18181b',
+        9: '#080808', // original dark
+        10: '#000000',
+      }
+    };
+
+    const getThemeDefaultBrightness = (t) => {
+      switch (t) {
+        case 'sepia': return 4;
+        case 'newspaper': return 3;
+        case 'colorful': return 2;
+        case 'dark': default: return 9;
+      }
+    };
+
+    let bgBrightness = ${defaultBgBrightness};
+
     try {
       const storedViewMode = localStorage.getItem('homepage_view_mode');
       if (storedViewMode) viewMode = storedViewMode;
@@ -273,6 +354,9 @@ export function generateExportHtml(
       
       const storedTheme = localStorage.getItem('homepage_theme');
       if (storedTheme) theme = storedTheme;
+
+      const storedBrightness = localStorage.getItem('homepage_bg_brightness');
+      if (storedBrightness) bgBrightness = parseInt(storedBrightness, 10);
     } catch (e) {
       console.warn("Storage access restricted. Proceeding with in-memory state fallback.", e);
     }
@@ -325,8 +409,11 @@ export function generateExportHtml(
           localStorage.setItem('homepage_theme', theme);
         } catch (e) {}
         
-        // Update body classes
-        document.body.className = "h-full flex flex-col overflow-hidden select-none relative transition-all duration-300 theme-" + theme;
+        const isDark = bgBrightness >= 6;
+        
+        // Update body classes and inline background color
+        document.body.className = "h-full flex flex-col overflow-hidden select-none relative transition-all duration-300 theme-" + theme + (isDark ? " is-dark" : " is-light");
+        document.body.style.backgroundColor = THEME_BACKGROUNDS[theme][bgBrightness];
         
         const header = document.getElementById('app-header');
         const logoBadge = document.getElementById('logo-badge');
@@ -344,51 +431,75 @@ export function generateExportHtml(
 
         // Apply tailored theme classes
         if (theme === 'sepia') {
-          if (header) header.classList.add('bg-[#f4ebd0]', 'border-[#dfd0b0]', 'text-[#433422]');
-          if (filterBar) filterBar.classList.add('bg-[#fbf6eb]/50', 'border-[#dfd0b0]');
-          if (statsBadge) statsBadge.classList.add('bg-[#ebdcb9]/40', 'border-[#dfd0b0]', 'text-[#5c4a37]');
-          if (footer) footer.classList.add('bg-[#f4ebd0]/30', 'border-[#dfd0b0]', 'text-[#705d46]');
-          
-          if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-[#dfd0b0] border border-[#c5b18a] text-[#433422]";
-          if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-[#433422]";
-          
+          if (isDark) {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b bg-[#433422]/90 border-[#5c4a37] text-[#fcf9f1]";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b shrink-0 gap-4 bg-black/20 border-[#5c4a37]/50 text-[#fcf9f1]";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border bg-black/20 border-[#5c4a37]/50 text-[#fcf9f1]/80";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-[#5c4a37] bg-black/10 text-[#fcf9f1]/60";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-[#5c4a37] border border-[#5c4a37] text-[#fcf9f1]";
+            if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-[#fcf9f1]";
+          } else {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b bg-[#f4ebd0]/90 border-[#dfd0b0] text-[#433422]";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b shrink-0 gap-4 bg-[#fbf6eb]/50 border-[#dfd0b0] text-[#433422]";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border bg-[#ebdcb9]/40 border-[#dfd0b0] text-[#5c4a37]";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-[#dfd0b0] bg-[#fbf6eb]/50 text-[#705d46]/75";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-[#dfd0b0] border border-[#c5b18a] text-[#433422]";
+            if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-[#433422]";
+          }
           if (bgOverlay) bgOverlay.className = "absolute inset-0 bg-[linear-gradient(to_right,rgba(67,52,34,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(67,52,34,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-0";
         } 
         else if (theme === 'newspaper') {
-          if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b-2 border-zinc-900 bg-[#faf9f6]";
-          if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b border-zinc-300 shrink-0 gap-4 bg-[#faf9f6]";
-          if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-zinc-900 bg-white text-zinc-900 font-bold";
-          if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-zinc-300 bg-zinc-50 text-zinc-600";
-          
-          if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-zinc-900 border border-zinc-900 text-white";
-          if (logoText) logoText.className = "text-xs font-bold tracking-[0.2em] uppercase font-serif text-zinc-900";
-          
+          if (isDark) {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b bg-zinc-950/90 border-zinc-850 text-zinc-100 font-serif";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b shrink-0 gap-4 bg-zinc-900/60 border-zinc-850 text-zinc-100 font-serif";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border bg-zinc-900 border-zinc-800 text-zinc-100 font-bold";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-zinc-850 bg-black/30 text-zinc-400 font-sans";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-zinc-100 text-zinc-950";
+            if (logoText) logoText.className = "text-xs font-bold tracking-[0.2em] uppercase font-serif text-zinc-100";
+          } else {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b-2 border-zinc-900 bg-[#faf9f6] text-zinc-900 font-serif";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b border-zinc-300 shrink-0 gap-4 bg-[#faf9f6] text-zinc-900 font-serif";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-900 bg-white text-zinc-900 font-bold";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-zinc-900 bg-white/50 text-zinc-500 font-sans";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-zinc-900 border border-zinc-900 text-white";
+            if (logoText) logoText.className = "text-xs font-bold tracking-[0.2em] uppercase font-serif text-zinc-900";
+          }
           if (bgOverlay) bgOverlay.className = "absolute inset-0 bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] bg-[size:24px_24px] opacity-40 pointer-events-none z-0";
         } 
         else if (theme === 'colorful') {
-          if (header) {
-            header.classList.add('bg-[#09080e]/95', 'border-indigo-950/60', 'text-purple-200/90');
+          if (isDark) {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b bg-[#0f172a]/90 border-indigo-950 text-purple-100";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b shrink-0 gap-4 bg-slate-900/60 border-slate-850 text-purple-100";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border bg-indigo-950/20 border-indigo-900/25 text-indigo-350";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-indigo-950 bg-black/30 text-indigo-400 font-sans";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-gradient-to-br from-slate-900 to-indigo-950 border border-indigo-900/40 text-indigo-400";
+            if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-indigo-200";
+          } else {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b bg-white/70 border-slate-200 text-slate-800 backdrop-blur-md";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b border-slate-200 shrink-0 gap-4 bg-[#f8fafc]/50 text-slate-800";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200 bg-white text-slate-600";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-slate-200 bg-white/50 text-slate-500 font-sans";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-gradient-to-br from-rose-400 to-amber-300 border border-amber-200 text-white shadow-sm";
+            if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-slate-700";
           }
-          if (filterBar) filterBar.classList.add('bg-indigo-950/10', 'border-indigo-900/10');
-          if (statsBadge) statsBadge.classList.add('bg-indigo-950/20', 'border-indigo-900/25', 'text-indigo-300');
-          if (footer) footer.classList.add('bg-indigo-950/20', 'border-indigo-900/10', 'text-indigo-400');
-          
-          if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-gradient-to-br from-slate-900 to-indigo-950 border border-indigo-900/40 text-indigo-400";
-          if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-indigo-200";
-          
           if (bgOverlay) bgOverlay.className = "absolute inset-0 bg-[linear-gradient(to_right,rgba(139,92,246,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(139,92,246,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-0";
         } 
         else { // dark
-          if (header) {
-            header.classList.add('bg-[#080808]/90', 'border-white/5', 'text-zinc-200');
+          if (isDark) {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b bg-[#080808]/90 border-white/5 text-zinc-100";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b shrink-0 gap-4 bg-[#060608]/50 border-white/[0.02] text-zinc-100";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border bg-white/[0.02] border-white/[0.04] text-zinc-400";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-white/5 bg-black/20 text-zinc-500";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-zinc-900 border border-white/10 text-emerald-400";
+            if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-zinc-100";
+          } else {
+            if (header) header.className = "w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 shrink-0 transition-colors duration-300 border-b bg-white/90 border-zinc-200 text-zinc-900";
+            if (filterBar) filterBar.className = "w-full px-6 md:px-10 py-2.5 flex items-center justify-between border-b shrink-0 gap-4 bg-zinc-50 border-zinc-200 text-zinc-900";
+            if (statsBadge) statsBadge.className = "text-[10px] font-mono flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-200 bg-white text-zinc-600";
+            if (footer) footer.className = "w-full py-3 text-center shrink-0 border-t border-zinc-200 bg-white/50 text-zinc-500 font-sans";
+            if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white border border-zinc-200 text-zinc-800";
+            if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-zinc-800";
           }
-          if (filterBar) filterBar.classList.add('bg-[#060608]/50', 'border-white/[0.02]');
-          if (statsBadge) statsBadge.classList.add('bg-white/[0.02]', 'border-white/[0.04]', 'text-zinc-400');
-          if (footer) footer.classList.add('bg-[#060608]/30', 'border-white/[0.03]', 'text-zinc-500');
-          
-          if (logoBadge) logoBadge.className = "w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-zinc-900 border border-white/10 text-emerald-400";
-          if (logoText) logoText.className = "text-xs font-semibold tracking-[0.3em] uppercase text-zinc-100";
-          
           if (bgOverlay) bgOverlay.className = "absolute inset-0 bg-[linear-gradient(to_right,#0c0c0c_1px,transparent_1px),linear-gradient(to_bottom,#0c0c0c_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-0";
         }
 
@@ -398,40 +509,67 @@ export function generateExportHtml(
           const btn = document.getElementById('btn-theme-' + t);
           if (btn) {
             if (t === theme) {
-              if (theme === 'sepia') btn.className = "p-1.5 rounded bg-[#dfd0b0] text-[#433422] shadow-sm font-semibold border border-[#dfd0b0]";
-              else if (theme === 'newspaper') btn.className = "p-1.5 rounded bg-zinc-900 text-white font-bold border border-zinc-900";
-              else if (theme === 'colorful') btn.className = "p-1.5 rounded bg-indigo-600/20 text-purple-200 border border-indigo-500/30 shadow-sm";
-              else btn.className = "p-1.5 rounded bg-white/10 text-white border border-white/10 shadow";
+              if (theme === 'sepia') btn.className = "p-1.5 rounded bg-[#5c4a37] text-white shadow-sm font-semibold border border-[#5c4a37]";
+              else if (theme === 'newspaper') btn.className = isDark ? "p-1.5 rounded bg-zinc-100 text-zinc-950 font-bold border border-zinc-100 shadow" : "p-1.5 rounded bg-zinc-900 text-white font-bold border border-zinc-900 shadow";
+              else if (theme === 'colorful') btn.className = isDark ? "p-1.5 rounded bg-indigo-600/35 text-purple-100 border border-indigo-500/35 shadow-sm" : "p-1.5 rounded bg-white text-slate-800 font-semibold border border-slate-200 shadow-sm";
+              else btn.className = isDark ? "p-1.5 rounded bg-white/10 text-white border border-white/10 shadow" : "p-1.5 rounded bg-black/10 text-black border border-black/10 shadow";
             } else {
-              if (theme === 'sepia') btn.className = "p-1.5 rounded text-[#705d46] hover:text-[#433422] hover:bg-[#ebdcb9]/30 border border-transparent";
-              else if (theme === 'newspaper') btn.className = "p-1.5 rounded text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 border border-transparent";
-              else if (theme === 'colorful') btn.className = "p-1.5 rounded text-indigo-400 hover:text-purple-200 hover:bg-indigo-500/5 border border-transparent";
-              else btn.className = "p-1.5 rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border border-transparent";
+              if (theme === 'sepia') btn.className = isDark ? "p-1.5 rounded text-[#fcf9f1]/65 hover:text-white hover:bg-[#5c4a37]/35 border border-transparent" : "p-1.5 rounded text-[#705d46] hover:text-[#433422] hover:bg-[#ebdcb9]/30 border border-transparent";
+              else if (theme === 'newspaper') btn.className = isDark ? "p-1.5 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 border border-transparent" : "p-1.5 rounded text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 border border-transparent";
+              else if (theme === 'colorful') btn.className = isDark ? "p-1.5 rounded text-indigo-400 hover:text-purple-200 hover:bg-indigo-500/5 border border-transparent" : "p-1.5 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-200/40 border border-transparent";
+              else btn.className = isDark ? "p-1.5 rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border border-transparent" : "p-1.5 rounded text-zinc-500 hover:text-zinc-800 hover:bg-black/5 border border-transparent";
             }
           }
         });
 
         // Update layout selector background wrapper styles
-        const themeContainerClass = theme === 'sepia' 
-          ? 'flex items-center bg-[#ebdcb9]/60 border border-[#dfd0b0] rounded-md p-0.5' 
-          : theme === 'newspaper' 
-          ? 'flex items-center bg-white border border-zinc-300 rounded-md p-0.5' 
-          : theme === 'colorful' 
-          ? 'flex items-center bg-indigo-950/20 border border-indigo-900/30 rounded-md p-0.5' 
-          : 'flex items-center bg-white/5 border border-white/10 rounded-md p-0.5';
+        const themeContainerClass = (theme === 'sepia')
+          ? (isDark ? 'flex items-center bg-black/20 border border-[#5c4a37]/50 rounded-md p-0.5' : 'flex items-center bg-[#ebdcb9]/60 border border-[#dfd0b0] rounded-md p-0.5')
+          : (theme === 'newspaper')
+          ? (isDark ? 'flex items-center bg-zinc-900/60 border border-zinc-800 rounded-md p-0.5' : 'flex items-center bg-white border border-zinc-300 rounded-md p-0.5')
+          : (theme === 'colorful')
+          ? (isDark ? 'flex items-center bg-slate-900/60 border border-slate-850 rounded-md p-0.5' : 'flex items-center bg-slate-100 border border-slate-200/80 rounded-md p-0.5')
+          : (isDark ? 'flex items-center bg-white/5 border border-white/10 rounded-md p-0.5' : 'flex items-center bg-black/5 border border-black/10 rounded-md p-0.5');
 
         const themeSelectors = document.getElementById('theme-selectors-container');
         const layoutSelectors = document.getElementById('layout-selectors-container');
         const appearanceSelectors = document.getElementById('appearance-selectors-container');
+        const brightnessSelectors = document.getElementById('brightness-selectors-container');
 
         if (themeSelectors) themeSelectors.className = themeContainerClass;
         if (layoutSelectors) layoutSelectors.className = themeContainerClass;
         if (appearanceSelectors) appearanceSelectors.className = themeContainerClass;
+        if (brightnessSelectors) brightnessSelectors.className = themeContainerClass;
+
+        // Sync brightness inputs
+        const rangeInput = document.getElementById('brightness-range');
+        if (rangeInput) {
+          rangeInput.value = bgBrightness;
+          if (theme === 'sepia') {
+            rangeInput.className = "w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer bg-[#dfd0b0]";
+          } else if (theme === 'newspaper') {
+            rangeInput.className = "w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer bg-zinc-300";
+          } else if (theme === 'colorful') {
+            rangeInput.className = "w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer bg-slate-200";
+          } else {
+            rangeInput.className = "w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer bg-zinc-800";
+          }
+        }
+        const valSpan = document.getElementById('brightness-value');
+        if (valSpan) valSpan.innerText = bgBrightness;
 
         setViewMode(viewMode);
       } catch (err) {
         console.error("Error in setTheme:", err);
       }
+    }
+
+    function handleBrightnessChange(level) {
+      bgBrightness = level;
+      try {
+        localStorage.setItem('homepage_bg_brightness', bgBrightness);
+      } catch (e) {}
+      setTheme(theme);
     }
 
     // Set layout view mode
@@ -442,7 +580,7 @@ export function generateExportHtml(
           localStorage.setItem('homepage_view_mode', viewMode);
         } catch (e) {}
         
-        const modes = ['grid', 'list', 'groups', 'dock'];
+        const modes = ['grid', 'list', 'groups', 'compact-groups', 'dock'];
         modes.forEach(m => {
           const btn = document.getElementById('btn-mode-' + m);
           if (btn) {
@@ -734,6 +872,69 @@ export function generateExportHtml(
         });
 
         container.innerHTML = '<div class="w-full max-w-5xl space-y-8 pb-8">' +
+            groupsHtml +
+          '</div>';
+      }
+      else if (viewMode === 'compact-groups') {
+        container.className = "w-full h-full p-2 md:p-4 overflow-y-auto flex items-start justify-center";
+        
+        const groups = {};
+        filtered.forEach(function(link) {
+          const cat = (link.category && link.category.trim()) ? link.category.trim() : 'General';
+          if (!groups[cat]) groups[cat] = [];
+          groups[cat].push(link);
+        });
+
+        let groupsHtml = '';
+        Object.keys(groups).sort().forEach(function(cat) {
+          const catLinks = groups[cat];
+          let groupCardsHtml = '';
+          
+          catLinks.forEach(function(link) {
+            const cleanUrl = getCleanUrl(link.url);
+            const domainLabel = getDomainLabel(link.url);
+            const styleClass = getCardClass(link.color);
+            const monogram = link.title ? link.title.charAt(0).toUpperCase() : '?';
+            const faviconUrl = "https://www.google.com/s2/favicons?sz=64&domain=" + domainLabel;
+            
+            groupCardsHtml += '<a href="' + escapeHtml(cleanUrl) + '" target="_blank" class="fade-in flex items-center gap-2 p-1.5 rounded-md border transition-all duration-200 group ' + styleClass + '">' +
+                '<div class="relative flex items-center justify-center w-6 h-6 rounded flex-shrink-0 border ' + getMonogramClass() + '">' +
+                  '<span class="text-[9px] select-none font-bold">' + escapeHtml(monogram) + '</span>' +
+                  '<div class="absolute -bottom-0.5 -right-0.5 p-0.5 rounded shadow flex items-center justify-center border ' + getFaviconWrapperClass() + '">' +
+                    '<img src="' + escapeHtml(faviconUrl) + '" alt="favicon" class="w-2.5 h-2.5 object-contain rounded" onerror="this.style.display=\'none\'" />' +
+                  '</div>' +
+                '</div>' +
+                '<div class="truncate flex-1">' +
+                  '<h4 class="text-[11px] font-semibold leading-tight tracking-tight truncate ' + getTitleColorClass() + '">' + escapeHtml(link.title || 'Acceso Directo') + '</h4>' +
+                '</div>' +
+              '</a>';
+          });
+
+          const groupBorderClass = theme === 'newspaper' 
+            ? 'border-zinc-950 border-b' 
+            : theme === 'sepia' 
+            ? 'border-[#dfd0b0] border-b' 
+            : 'border-white/[0.05] border-b';
+
+          const groupTitleClass = theme === 'newspaper' 
+            ? 'text-[10px] font-bold uppercase tracking-wider text-zinc-900 font-serif' 
+            : theme === 'sepia' 
+            ? 'text-[10px] font-bold uppercase tracking-wider text-[#433422]' 
+            : 'text-[10px] font-semibold uppercase tracking-wider text-zinc-400';
+
+          groupsHtml += '<div class="space-y-1.5">' +
+              '<div class="flex items-center gap-1.5 pb-1 ' + groupBorderClass + '">' +
+                '<i data-lucide="folder-open" class="w-3 h-3 opacity-60"></i>' +
+                '<h2 class="' + groupTitleClass + '">' + escapeHtml(cat) + '</h2>' +
+                '<span class="px-1.5 py-0.5 rounded-full text-[8px] font-mono border ' + getMonogramClass() + '">' + catLinks.length + '</span>' +
+              '</div>' +
+              '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">' +
+                groupCardsHtml +
+              '</div>' +
+            '</div>';
+        });
+
+        container.innerHTML = '<div class="w-full max-w-6xl space-y-4 pb-8">' +
             groupsHtml +
           '</div>';
       }

@@ -271,6 +271,8 @@ export const LinkCard: React.FC<LinkCardProps> = ({
               }}
               className="w-4 h-4 object-contain rounded"
               referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </div>

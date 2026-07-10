@@ -1,14 +1,75 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, writeBatch, setDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
 import { LinkItem, PRESET_COLORS, ThemeType } from './types';
 import { DEFAULT_LINKS } from './defaultLinks';
 import { Header } from './components/Header';
 import { LinkGrid } from './components/LinkGrid';
-import { AdminPanel } from './components/AdminPanel';
 import { handleFirestoreError, OperationType } from './utils/firestoreError';
-import { generateExportHtml } from './utils/export';
+
+// Lazily load AdminPanel as it contains larger UI/settings controls not needed on initial render
+const AdminPanel = lazy(() => import('./components/AdminPanel').then(module => ({ default: module.AdminPanel })));
+
+const THEME_BACKGROUNDS: Record<ThemeType, Record<number, string>> = {
+  sepia: {
+    1: '#ffffff',
+    2: '#fdfcf7',
+    3: '#fcf9f1',
+    4: '#fbf6eb', // original sepia
+    5: '#f4e9d5',
+    6: '#ead5b3',
+    7: '#d1b68a',
+    8: '#9e8055',
+    9: '#433422',
+    10: '#000000',
+  },
+  newspaper: {
+    1: '#ffffff',
+    2: '#fcfcfc',
+    3: '#faf9f6', // original newspaper
+    4: '#eaeae3',
+    5: '#dbdad2',
+    6: '#bcbbb3',
+    7: '#9c9b93',
+    8: '#5c5b55',
+    9: '#18181b',
+    10: '#000000',
+  },
+  colorful: {
+    1: '#ffffff',
+    2: '#f8fafc', // original colorful
+    3: '#f1f5f9',
+    4: '#cbd5e1',
+    5: '#94a3b8',
+    6: '#64748b',
+    7: '#475569',
+    8: '#1e293b',
+    9: '#0f172a',
+    10: '#000000',
+  },
+  dark: {
+    1: '#ffffff',
+    2: '#f4f4f5',
+    3: '#d4d4d8',
+    4: '#a1a1aa',
+    5: '#71717a',
+    6: '#3f3f46',
+    7: '#27272a',
+    8: '#18181b',
+    9: '#080808', // original dark
+    10: '#000000',
+  }
+};
+
+const getThemeDefaultBrightness = (t: ThemeType): number => {
+  switch (t) {
+    case 'sepia': return 4;
+    case 'newspaper': return 3;
+    case 'colorful': return 2;
+    case 'dark': default: return 9;
+  }
+};
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -19,8 +80,8 @@ export default function App() {
   const [localLinks, setLocalLinks] = useState<LinkItem[]>([]);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'groups' | 'dock'>(() => {
-    return (localStorage.getItem('homepage_view_mode') as 'grid' | 'list' | 'groups' | 'dock') || 'grid';
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'groups' | 'dock' | 'compact-groups'>(() => {
+    return (localStorage.getItem('homepage_view_mode') as 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups') || 'grid';
   });
   const [isSoberMode, setIsSoberMode] = useState<boolean>(() => {
     return localStorage.getItem('homepage_sober_mode') === 'true';
@@ -28,58 +89,81 @@ export default function App() {
   const [theme, setTheme] = useState<ThemeType>(() => {
     return (localStorage.getItem('homepage_theme') as ThemeType) || 'dark';
   });
+  const [bgBrightness, setBgBrightness] = useState<number>(() => {
+    const val = localStorage.getItem('homepage_bg_brightness');
+    if (val) return parseInt(val, 10);
+    const currentTheme = (localStorage.getItem('homepage_theme') as ThemeType) || 'dark';
+    return getThemeDefaultBrightness(currentTheme);
+  });
   
   // Track selected link to edit in Admin Drawer
   const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
 
-  const handleViewModeChange = (mode: 'grid' | 'list' | 'groups' | 'dock') => {
+  const saveUserSettings = async (
+    currentTheme: ThemeType,
+    currentBrightness: number,
+    currentViewMode: 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups',
+    currentSoberMode: boolean
+  ) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        theme: currentTheme,
+        bgBrightness: currentBrightness,
+        viewMode: currentViewMode,
+        isSoberMode: currentSoberMode,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+    }
+  };
+
+  const handleViewModeChange = async (mode: 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups') => {
     setViewMode(mode);
     localStorage.setItem('homepage_view_mode', mode);
+    if (user) {
+      await saveUserSettings(theme, bgBrightness, mode, isSoberMode);
+    }
   };
 
-  const handleThemeChange = (newTheme: ThemeType) => {
+  const handleThemeChange = async (newTheme: ThemeType) => {
     setTheme(newTheme);
     localStorage.setItem('homepage_theme', newTheme);
+    const defaultBright = getThemeDefaultBrightness(newTheme);
+    setBgBrightness(defaultBright);
+    localStorage.setItem('homepage_bg_brightness', String(defaultBright));
+
+    if (user) {
+      await saveUserSettings(newTheme, defaultBright, viewMode, isSoberMode);
+    }
   };
 
-  const handleToggleSoberMode = () => {
-    setIsSoberMode((prev) => {
-      const next = !prev;
-      localStorage.setItem('homepage_sober_mode', String(next));
-      return next;
-    });
+  const handleBgBrightnessChange = async (level: number) => {
+    setBgBrightness(level);
+    localStorage.setItem('homepage_bg_brightness', String(level));
+
+    if (user) {
+      await saveUserSettings(theme, level, viewMode, isSoberMode);
+    }
+  };
+
+  const handleToggleSoberMode = async () => {
+    const nextSober = !isSoberMode;
+    setIsSoberMode(nextSober);
+    localStorage.setItem('homepage_sober_mode', String(nextSober));
+
+    if (user) {
+      await saveUserSettings(theme, bgBrightness, viewMode, nextSober);
+    }
   };
 
   // 1. Listen for Firebase Auth State Changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       
-      if (currentUser) {
-        // Fetch custom links from Firestore in real-time
-        const q = query(collection(db, 'links'), where('userId', '==', currentUser.uid));
-        
-        const unsubFirestore = onSnapshot(q, (snapshot) => {
-          const fetchedLinks: LinkItem[] = [];
-          snapshot.forEach((docSnap) => {
-            fetchedLinks.push({
-              id: docSnap.id,
-              ...docSnap.data(),
-            } as LinkItem);
-          });
-          
-          // Sort items client-side by order field to avoid requiring complex Firestore indexes
-          fetchedLinks.sort((a, b) => a.order - b.order);
-          setLinks(fetchedLinks);
-          setLoading(false);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, 'links');
-        });
-
-        return () => {
-          unsubFirestore();
-        };
-      } else {
+      if (!currentUser) {
         // Fetch local links from localStorage
         const stored = localStorage.getItem('homepage_local_links');
         if (stored) {
@@ -105,6 +189,36 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // 1b. Subscribe to Firestore links in real-time when user is authenticated
+  useEffect(() => {
+    if (!user) return;
+
+    setLoading(true);
+    const q = query(collection(db, 'links'), where('userId', '==', user.uid));
+    
+    const unsubFirestore = onSnapshot(q, (snapshot) => {
+      const fetchedLinks: LinkItem[] = [];
+      snapshot.forEach((docSnap) => {
+        fetchedLinks.push({
+          id: docSnap.id,
+          ...docSnap.data(),
+        } as LinkItem);
+      });
+      
+      // Sort items client-side by order field to avoid requiring complex Firestore indexes
+      fetchedLinks.sort((a, b) => a.order - b.order);
+      setLinks(fetchedLinks);
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'links');
+      setLoading(false);
+    });
+
+    return () => {
+      unsubFirestore();
+    };
+  }, [user]);
 
   // 2. Automatically prompt/handle migrating local links to Cloud on first Google Login
   useEffect(() => {
@@ -158,6 +272,61 @@ export default function App() {
       migrateLocalLinks();
     }
   }, [user, localLinks]);
+
+  // 3. Load and subscribe to user settings when user logs in
+  useEffect(() => {
+    if (!user) return;
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubSettings = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.theme) {
+          setTheme(data.theme as ThemeType);
+          localStorage.setItem('homepage_theme', data.theme);
+        }
+        if (typeof data.bgBrightness === 'number') {
+          setBgBrightness(data.bgBrightness);
+          localStorage.setItem('homepage_bg_brightness', String(data.bgBrightness));
+        }
+        if (data.viewMode) {
+          setViewMode(data.viewMode as 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups');
+          localStorage.setItem('homepage_view_mode', data.viewMode);
+        }
+        if (typeof data.isSoberMode === 'boolean') {
+          setIsSoberMode(data.isSoberMode);
+          localStorage.setItem('homepage_sober_mode', String(data.isSoberMode));
+        }
+      } else {
+        // If settings doc doesn't exist in Firestore, save current local settings as initial settings
+        try {
+          const currentTheme = localStorage.getItem('homepage_theme') as ThemeType || 'dark';
+          const currentBrightness = localStorage.getItem('homepage_bg_brightness');
+          const brightVal = currentBrightness ? parseInt(currentBrightness, 10) : getThemeDefaultBrightness(currentTheme);
+          const currentViewMode = localStorage.getItem('homepage_view_mode') as 'grid' | 'list' | 'groups' | 'dock' | 'compact-groups' || 'grid';
+          const currentSoberMode = localStorage.getItem('homepage_sober_mode') === 'true';
+          
+          setDoc(userDocRef, {
+            theme: currentTheme,
+            bgBrightness: brightVal,
+            viewMode: currentViewMode,
+            isSoberMode: currentSoberMode,
+            updatedAt: new Date().toISOString()
+          }).catch((err) => {
+            handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+          });
+        } catch (e) {
+          console.error("Error setting initial settings:", e);
+        }
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+    });
+
+    return () => {
+      unsubSettings();
+    };
+  }, [user]);
 
   // Auth Handlers
   const handleLogin = async () => {
@@ -374,8 +543,10 @@ export default function App() {
     }
   };
 
-  const handleExportHtml = () => {
-    const htmlContent = generateExportHtml(links, viewMode, isSoberMode, theme);
+  const handleExportHtml = async () => {
+    // Dynamic import of generateExportHtml to reduce initial bundle size
+    const { generateExportHtml } = await import('./utils/export');
+    const htmlContent = generateExportHtml(links, viewMode, isSoberMode, theme, bgBrightness);
     const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -388,30 +559,58 @@ export default function App() {
   };
 
   const getContainerClasses = () => {
+    const isDark = bgBrightness >= 6;
+    let textClass = "";
+    let fontClass = "font-sans";
+    let selectionClass = "";
+
     switch (theme) {
       case 'sepia':
-        return "min-h-screen w-screen bg-[#fbf6eb] text-[#433422] font-sans selection:bg-[#dfd0b0] selection:text-[#433422] flex flex-col relative overflow-hidden";
+        textClass = isDark ? "text-[#fcf9f1]" : "text-[#433422]";
+        selectionClass = isDark ? "selection:bg-[#5c4a37] selection:text-white" : "selection:bg-[#dfd0b0] selection:text-[#433422]";
+        fontClass = "font-sans";
+        break;
       case 'newspaper':
-        return "min-h-screen w-screen bg-[#faf9f6] text-zinc-900 font-serif selection:bg-zinc-250 selection:text-zinc-900 flex flex-col relative overflow-hidden";
+        textClass = isDark ? "text-zinc-100" : "text-zinc-900";
+        selectionClass = isDark ? "selection:bg-zinc-700 selection:text-white" : "selection:bg-zinc-250 selection:text-zinc-900";
+        fontClass = "font-serif";
+        break;
       case 'colorful':
-        return "min-h-screen w-screen bg-[#f8fafc] text-slate-850 font-sans selection:bg-rose-100 selection:text-slate-900 flex flex-col relative overflow-hidden";
+        textClass = isDark ? "text-purple-100" : "text-slate-850";
+        selectionClass = isDark ? "selection:bg-indigo-950 selection:text-white" : "selection:bg-rose-100 selection:text-slate-900";
+        fontClass = "font-sans";
+        break;
       case 'dark':
       default:
-        return "min-h-screen w-screen bg-[#080808] bg-radial-[circle_at_center,_var(--tw-gradient-stops)] from-zinc-950 via-[#060606] to-black text-zinc-100 font-sans selection:bg-zinc-800 selection:text-white flex flex-col relative overflow-hidden";
+        textClass = isDark ? "text-zinc-100" : "text-zinc-900";
+        selectionClass = isDark ? "selection:bg-zinc-800 selection:text-white" : "selection:bg-zinc-200 selection:text-zinc-900";
+        fontClass = "font-sans";
+        break;
     }
+
+    return `min-h-screen w-screen ${textClass} ${fontClass} ${selectionClass} flex flex-col relative overflow-hidden`;
   };
 
   const getFooterClasses = () => {
+    const isDark = bgBrightness >= 6;
     switch (theme) {
       case 'sepia':
-        return 'border-[#dfd0b0] bg-[#fbf6eb]/50 text-[#705d46]/75';
+        return isDark 
+          ? 'border-[#5c4a37] bg-black/10 text-[#fcf9f1]/60'
+          : 'border-[#dfd0b0] bg-[#fbf6eb]/50 text-[#705d46]/75';
       case 'newspaper':
-        return 'border-zinc-300 bg-white/50 text-zinc-500 font-sans border-t-2 border-zinc-900';
+        return isDark
+          ? 'border-zinc-800 bg-black/30 text-zinc-400 font-sans'
+          : 'border-zinc-300 bg-white/50 text-zinc-500 font-sans border-t-2 border-zinc-900';
       case 'colorful':
-        return 'border-slate-200 bg-white/50 text-slate-500 font-sans';
+        return isDark
+          ? 'border-indigo-950 bg-black/30 text-indigo-400 font-sans'
+          : 'border-slate-200 bg-white/50 text-slate-500 font-sans';
       case 'dark':
       default:
-        return 'border-white/5 bg-black/20 text-zinc-500';
+        return isDark
+          ? 'border-white/5 bg-black/20 text-zinc-500'
+          : 'border-black/5 bg-white/20 text-zinc-500';
     }
   };
 
@@ -445,7 +644,12 @@ export default function App() {
   };
 
   return (
-    <div className={getContainerClasses()}>
+    <div id="app-root-container" className={getContainerClasses()}>
+      <style>{`
+        #app-root-container {
+          background-color: ${THEME_BACKGROUNDS[theme][bgBrightness]} !important;
+        }
+      `}</style>
       {/* Background ambient themes overlays */}
       {renderBackgroundOverlay()}
       
@@ -476,6 +680,8 @@ export default function App() {
             onExportHtml={handleExportHtml}
             theme={theme}
             onChangeTheme={handleThemeChange}
+            bgBrightness={bgBrightness}
+            onChangeBgBrightness={handleBgBrightnessChange}
           />
 
           {/* Core Content Area - Links grid taking up full space */}
@@ -495,28 +701,30 @@ export default function App() {
 
           {/* Footer with credit and version */}
           <footer className={`w-full py-2.5 text-center shrink-0 border-t ${getFooterClasses()} text-[10px] font-mono tracking-wider z-20`}>
-            By @emagnare Version 1.8
+            By @emagnare Version 2.0
           </footer>
 
           {/* Control Settings Sidebar */}
-          <AdminPanel
-            isOpen={isAdminOpen}
-            onClose={() => {
-              setIsAdminOpen(false);
-              setEditingLink(null);
-            }}
-            user={user}
-            onLogin={handleLogin}
-            onLogout={handleLogout}
-            links={links}
-            onAddLink={handleAddLink}
-            onUpdateLink={handleUpdateLink}
-            onDeleteLink={handleDeleteLink}
-            onMoveLink={handleMoveLink}
-            initialEditingLink={editingLink}
-            onSelectEditLink={setEditingLink}
-            onCancelEdit={() => setEditingLink(null)}
-          />
+          <Suspense fallback={null}>
+            <AdminPanel
+              isOpen={isAdminOpen}
+              onClose={() => {
+                setIsAdminOpen(false);
+                setEditingLink(null);
+              }}
+              user={user}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+              links={links}
+              onAddLink={handleAddLink}
+              onUpdateLink={handleUpdateLink}
+              onDeleteLink={handleDeleteLink}
+              onMoveLink={handleMoveLink}
+              initialEditingLink={editingLink}
+              onSelectEditLink={setEditingLink}
+              onCancelEdit={() => setEditingLink(null)}
+            />
+          </Suspense>
         </div>
       )}
     </div>
