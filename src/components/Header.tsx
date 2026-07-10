@@ -134,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
     const isDark = bgBrightness >= 6;
     const padding = isIconOnly ? 'p-1.5' : 'px-3 py-1.5';
     const rounded = isRound ? 'rounded-full' : 'rounded-md';
-    const base = `${padding} ${rounded} text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 font-sans border shadow-sm cursor-pointer select-none`;
+    const base = `${padding} ${rounded} text-[10px] uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 font-sans border shadow-sm cursor-pointer select-none shrink-0`;
 
     switch (theme) {
       case 'sepia':
@@ -182,12 +182,12 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className={`w-full min-h-[72px] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 pt-5 pb-4 md:py-4 gap-4 select-none z-30 shrink-0 ${getHeaderThemeClasses()}`}>
+    <header className={`w-full h-16 flex flex-row items-center justify-between px-4 md:px-8 py-3 gap-3 select-none z-30 shrink-0 overflow-hidden ${getHeaderThemeClasses()}`}>
       {/* Left logo: Clean, modern custom logo using Pin Icon with rotation effect */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 shrink-0">
         <div 
           onClick={() => window.location.reload()} 
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex items-center gap-2 cursor-pointer group"
           title="Recargar Página"
         >
           <div className={`w-8 h-8 rounded-xl flex items-center justify-center relative overflow-hidden shrink-0 transition-all shadow-md ${
@@ -209,8 +209,8 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.3)]'
             }`} />
           </div>
-          <span className={`text-xs font-semibold tracking-[0.3em] uppercase group-hover:opacity-100 transition-all ${
-            theme === 'newspaper' ? 'font-serif font-bold tracking-[0.2em] text-zinc-900' : theme === 'colorful' ? 'font-sans text-slate-700' : 'font-light text-current'
+          <span className={`text-[10px] md:text-xs font-semibold tracking-[0.2em] md:tracking-[0.3em] uppercase group-hover:opacity-100 transition-all hidden sm:inline-block ${
+            theme === 'newspaper' ? 'font-serif font-bold text-zinc-900' : theme === 'colorful' ? 'font-sans text-slate-700' : 'font-light text-current'
           }`}>
             PIN YOUR TOOLS
           </span>
@@ -218,10 +218,10 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right section: Theme Selector, Views, Actions, Add Link button */}
-      <div className="flex flex-wrap items-center justify-end gap-3.5 font-sans">
+      <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar py-1 justify-start md:justify-end shrink-0 select-none flex-1 max-w-[calc(100%-48px)] sm:max-w-none">
 
         {/* Theme Switcher Bar - 4 distinct themes */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <div className={`flex items-center p-0.5 rounded-md ${getControlBgClasses()}`} id="theme-selector-bar">
             <button
               onClick={() => onChangeTheme('dark')}
@@ -280,7 +280,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Layout Switcher */}
         {totalLinks > 0 && (
-          <div className={`flex items-center p-0.5 rounded-md ${getControlBgClasses()}`} id="view-mode-selector">
+          <div className={`flex items-center p-0.5 rounded-md shrink-0 ${getControlBgClasses()}`} id="view-mode-selector">
             <button
               onClick={() => onChangeViewMode('grid')}
               className={`p-1.5 rounded transition-all duration-150 ${getButtonActiveClasses(viewMode === 'grid')}`}
@@ -339,7 +339,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Organize Mode Switcher */}
         {totalLinks > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {isEditMode && onResetStyles && (
               <button
                 onClick={onResetStyles}
